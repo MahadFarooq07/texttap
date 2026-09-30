@@ -1,0 +1,23 @@
+{
+  "name": "texttap-chrome-extension",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Offline, non-neural OCR and deterministic text formatting for Chrome.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:ocr": "node --test tests/ocr.integration.mjs",
+    "check": "npm run build && npm test && npm run test:ocr",
+    "preview": "node scripts/preview.mjs",
+    "package": "node scripts/package.mjs"
+  },
+  "dependencies": {
+    "tesseract.js": "7.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "sharp": "0.35.5",
+    "fflate": "0.8.3"
+  }
+}

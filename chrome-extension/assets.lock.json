@@ -1,0 +1,7 @@
+{
+  "language": "eng",
+  "engine": "legacy",
+  "source": "https://raw.githubusercontent.com/tesseract-ocr/tessdata/4.1.0/eng.traineddata",
+  "sha256": "daa0c97d651c19fba3b25e81317cd697e9908c8208090c94c3905381c23fc047",
+  "bytes": 23466654
+}

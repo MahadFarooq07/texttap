@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+chrome-extension/dist/
+chrome-extension/release/
+chrome-extension/.cache/
+chrome-extension/node_modules/
+chrome-extension/artifacts/
+*.tsbuildinfo
+.env*
+!.env.example
+*.log
+.sites-runtime/
+artifacts/

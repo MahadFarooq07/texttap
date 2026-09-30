@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>TextTap — Your text, untapped.</title>
+    <link rel="icon" href="icons/32.png" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="editor">
+    <a class="skip-link" href="#workspace">Skip to workspace</a>
+    <header class="editor-header">
+      <a href="editor.html" class="brand"
+        ><img src="icons/48.png" width="36" height="36" alt="" /><strong
+          >TextTap</strong
+        ></a
+      ><span class="header-note">Your text. Your device. Your control.</span
+      ><span class="local-badge">100% local OCR</span>
+    </header>
+    <main id="workspace" class="workspace">
+      <section class="workspace-heading">
+        <div>
+          <span class="eyebrow">A LITTLE LESS RETYPING</span>
+          <h1>Your text, untapped.</h1>
+          <p>Capture the words. Keep the structure. Make them yours.</p>
+        </div>
+        <button class="button secondary" id="new-image">＋ Open image</button
+        ><input
+          type="file"
+          id="file-input"
+          accept="image/png,image/jpeg,image/webp,image/bmp"
+          hidden
+        />
+      </section>
+      <div id="notice" class="notice" role="alert" hidden></div>
+      <div class="workspace-grid">
+        <section class="panel source-panel" aria-labelledby="source-title">
+          <div class="panel-title">
+            <h2 id="source-title">Your image</h2>
+            <span id="dimensions" class="meta">PNG · JPG · WebP · BMP</span>
+          </div>
+          <div
+            id="dropzone"
+            class="dropzone"
+            tabindex="0"
+            role="button"
+            aria-label="Choose an image or drop it here"
+          >
+            <span class="upload-mark">＋</span>
+            <h3>A picture is worth a thousand words.</h3>
+            <p>Let’s get those words back.</p>
+            <span class="button primary">Choose an image</span
+            ><small>Or drop an image here · Up to 25 MB</small>
+          </div>
+          <div id="image-stage" class="image-stage" hidden>
+            <div id="canvas-wrap" class="canvas-wrap">
+              <canvas id="preview" aria-label="Source image preview"></canvas>
+              <div id="crop-overlay" class="crop-overlay" hidden>
+                <span></span>
+              </div>
+            </div>
+          </div>
+          <div id="crop-controls" class="image-tools" hidden>
+            <button id="crop-toggle" class="text-button">Crop image</button
+            ><button id="reset-crop" class="text-button" disabled>
+              Reset crop</button
+            ><span id="image-name" class="meta"></span>
+          </div>
+          <div id="crop-fields" class="crop-fields" hidden>
+            <p>Drag over the image, or enter coordinates in pixels.</p>
+            <div>
+              <label
+                >X<input id="crop-x" type="number" min="0" value="0" /></label
+              ><label
+                >Y<input id="crop-y" type="number" min="0" value="0" /></label
+              ><label
+                >Width<input id="crop-width" type="number" min="5" /></label
+              ><label
+                >Height<input id="crop-height" type="number" min="5"
+              /></label>
+            </div>
+            <button id="apply-crop" class="button secondary">Apply crop</button>
+          </div>
+          <div class="recognition-settings">
+            <div class="settings-row">
+              <label
+                >Page layout<select id="segmentation">
+                  <option value="auto">Automatic layout</option>
+                  <option value="block">Single text block</option>
+                  <option value="sparse">Scattered text</option>
+                  <option value="line">Single line</option>
+                </select></label
+              ><label
+                >Rotate<select id="rotation">
+                  <option value="0">Original</option>
+                  <option value="90">90° clockwise</option>
+                  <option value="180">180°</option>
+                  <option value="270">90° counterclockwise</option>
+                </select></label
+              >
+            </div>
+            <label class="check-label"
+              ><input type="checkbox" id="enhance" checked /><span
+                >Enhance for OCR<small
+                  >Upscale small text, improve contrast, adjust dark
+                  backgrounds</small
+                ></span
+              ></label
+            >
+            <div class="recognize-actions">
+              <button id="recognize" class="button primary" disabled>
+                Extract text <span>↵</span></button
+              ><button id="cancel" class="button secondary" hidden>
+                Cancel
+              </button>
+            </div>
+            <div id="progress-area" hidden>
+              <div class="progress-caption">
+                <span id="progress-label" role="status"
+                  >Loading local OCR engine…</span
+                ><span id="progress-value"></span>
+              </div>
+              <progress id="progress" max="100" value="0"></progress>
+            </div>
+          </div>
+          <button id="sample" class="sample-button">
+            Just exploring? Try a sample.
+          </button>
+        </section>
+        <section class="panel output-panel" aria-labelledby="output-title">
+          <div class="panel-title">
+            <h2 id="output-title">Your words</h2>
+            <span class="meta" id="result-meta">Ready when you are</span>
+          </div>
+          <div class="format-bar">
+            <label for="format">Format</label
+            ><select id="format">
+              <option value="paragraphs">Smart paragraphs</option>
+              <option value="lines">Keep original lines</option>
+              <option value="markdown">Markdown</option>
+              <option value="table">Table / TSV</option>
+              <option value="raw">Raw OCR</option></select
+            ><button
+              class="text-button"
+              id="restore"
+              disabled
+              title="Restore output from the original recognition result"
+            >
+              Restore OCR
+            </button>
+          </div>
+          <p id="format-hint" class="format-hint">
+            Keeps paragraph breaks and lists. Joins wrapped lines without
+            rewriting words.
+          </p>
+          <label for="output" class="sr-only">Extracted text — editable</label
+          ><textarea
+            id="output"
+            spellcheck="false"
+            placeholder="Your words will appear here.&#10;&#10;You can review, edit, and copy them before taking them anywhere."
+            disabled
+          ></textarea>
+          <div id="confidence" class="confidence" hidden></div>
+          <div class="output-footer">
+            <span id="word-count" class="meta">0 words</span>
+            <div>
+              <button id="download" class="button secondary" disabled>
+                Save .txt</button
+              ><button id="copy" class="button primary" disabled>
+                Copy text
+              </button>
+            </div>
+          </div>
+          <button id="copy-rich" class="text-button rich-copy" disabled>
+            Copy with formatting
+          </button>
+          <p id="copy-status" class="copy-status" aria-live="polite"></p>
+        </section>
+      </div>
+      <footer class="workspace-footer">
+        <span>Classic Tesseract OCR · English · No neural inference</span
+        ><span>Images stay on this device. Nothing is uploaded.</span>
+      </footer>
+      <details class="help">
+        <summary>Tips for a better capture</summary>
+        <p>
+          Crop closely around the text. Use a clear image with letters at least
+          20 pixels tall. Choose “Single text block” for a paragraph, “Single
+          line” for a heading, or “Scattered text” for disconnected labels.
+          Rotation is manual. For a complex table, select Table / TSV and review
+          the columns before copying. Handwriting, curved text, and damaged
+          scans are not reliably supported.
+        </p>
+        <p>
+          Formatting is rule-based and cannot reconstruct every original font,
+          emphasis, or merged table cell. It never uses a language model to
+          guess or rewrite your content.
+        </p>
+      </details>
+    </main>
+    <dialog id="confirm-dialog">
+      <form method="dialog">
+        <h2>Replace your edited text?</h2>
+        <p id="confirm-message">
+          This will replace the changes you made to the result.
+        </p>
+        <div>
+          <button class="button secondary" value="cancel">Keep edits</button
+          ><button class="button primary" value="replace">Replace</button>
+        </div>
+      </form>
+    </dialog>
+    <script src="bootstrap.js"></script>
+    <script src="editor.js"></script>
+  </body>
+</html>
