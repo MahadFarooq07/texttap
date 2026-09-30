@@ -18,7 +18,7 @@ npm run typecheck
 npm run build
 ```
 
-The build verifies the published extension ZIP and then creates a static export in `out/`. Vercel is configured to install with `npm ci`, build the Next.js project from the repository root, and serve the static export. Connect this repository in Vercel with the **Root Directory** set to `./`; the framework is Next.js and the output directory is `out`.
+The build verifies the published extension ZIP and then creates a static export in `out/`. Vercel is configured to install with `npm ci` and build the Next.js project from the repository root. Connect this repository in Vercel with the **Root Directory** set to `./` and the framework set to Next.js. Vercel manages its framework build output; `outputDirectory: null` explicitly restores its default instead of treating `out/` as Next.js build internals. The local static export remains in `out/`.
 
 ## Chrome extension
 
