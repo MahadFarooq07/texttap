@@ -9,8 +9,9 @@ The extension requests:
 - **activeTab:** temporary access to the tab you explicitly invoke it on, so it can take the visible screenshot.
 - **scripting:** show the region selector on that tab when requested.
 - **storage:** remember layout/format/enhancement preferences on this device.
-- **clipboardWrite:** copy the result when you click a copy button. It does not read your clipboard in the background. Pasted images are received only through an explicit paste event in the editor.
+- **clipboardWrite:** automatically copy text after an explicit area or visible-tab capture, and copy edited results when you click a copy button. Plain text and safe formatted HTML are written. It does not read your clipboard in the background. Pasted images are received only through an explicit paste event in the editor.
+- **offscreen:** run the packaged OCR worker and write to the clipboard in a hidden extension document, keeping you on your source tab.
 
-Pending screenshots are temporarily stored in local IndexedDB to transfer them from the capture worker to the editor. They are deleted when the editor consumes them. Unconsumed captures expire after 30 minutes and are removed during subsequent cleanup operations; they may remain physically on disk until cleanup runs. Extracted results remain only in editor memory unless you explicitly copy or download them.
+Area and visible-tab captures remain in memory while the hidden document recognizes and copies them. The document and OCR worker close after each job, including failures. Screenshots and results are not saved as history. Session storage keeps only success/error status, without recognized text or source URLs. Legacy pending captures from older releases expire after 30 minutes and are pruned on startup or installation. Imported images and editable results remain in editor memory until it closes.
 
 Chrome or your operating system manages clipboard contents and downloads after you export. Removing the extension removes its extension-managed preferences and local storage. The project does not provide encrypted capture storage or secure deletion guarantees.

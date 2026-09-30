@@ -8,16 +8,17 @@ An independent Chrome Manifest V3 extension for capturing printed English text f
 2. Enable **Developer mode**.
 3. Choose **Load unpacked** and select this folder's **`dist`** directory.
 4. Pin TextTap from Chrome's Extensions menu.
-5. Click TextTap and choose **Select an area**, **Capture visible tab**, or **Open an image**.
+5. Click TextTap and choose **Select an area** or **Capture visible tab**. Text is recognized locally and copied automatically; press **Ctrl+V** (**⌘V** on Mac) to paste. Choose **Image editor & formatting** to review an imported image or set the output format.
 
-The package is also available in `release/texttap-1.0.0.zip`. Extract it first, then load the extracted folder containing `manifest.json`. This is an unsigned development build, not a Chrome Web Store listing or a signed CRX.
+The package is also available in `release/texttap-1.1.0.zip`. Extract it first, then load the extracted folder containing `manifest.json`. This is an unsigned development build, not a Chrome Web Store listing or a signed CRX.
 
 Default area-capture shortcut: **Alt+Shift+S** (Option+Shift+S on Mac). Chrome may leave a shortcut unassigned if another extension uses it. Change it at `chrome://extensions/shortcuts`.
 
 ## Included functionality
 
 - Area selection on ordinary HTTP(S) pages, including text rendered in images, canvases, and visible video frames. Escape cancels selection.
-- Visible-tab capture followed by optional cropping in the editor. Useful for Chrome pages or PDF viewers that disallow injected selection UI.
+- Area and visible-tab capture copy text automatically without opening a tab. Useful for Chrome pages or PDF viewers that disallow injected selection UI.
+- Rich HTML and plain text share the clipboard: paragraphs and lists paste into rich editors, while plain text fields receive text. Saved editor format settings also apply to captures. Exact fonts, colors, and arbitrary document styling are not reconstructed.
 - PNG, JPEG, WebP, and BMP import, drag and drop, and image paste. File limit: 25 MB; decoded limit: 40 megapixels / 16,000 px per side.
 - Crop by dragging or entering pixel coordinates; reset crop; manual quarter-turn rotation.
 - Local enhancement: small-image upscaling, grayscale/contrast stretch, dark-background inversion, white border, and bounded processing dimensions.
@@ -71,6 +72,9 @@ Open `http://127.0.0.1:4174/editor.html`. The preview exercises image import, lo
 ```text
 manifest.json            Minimal MV3 permissions and strict CSP
 src/background.js        Capture routing and active-tab checks
+src/offscreen.js         Hidden OCR job, heartbeat, and clipboard routing
+src/lib/capture.js       Decode, crop, recognize, format, and copy pipeline
+src/lib/clipboard.js     Plain/rich copy in an unfocused extension document
 src/selection.js         On-demand isolated selection overlay
 src/editor.js            OCR workspace and state transitions
 src/popup.js             Toolbar actions

@@ -1,9 +1,38 @@
-import { saveCapture, deleteCapture, pruneCaptures } from "./lib/storage.js";
+import { pruneCaptures, getSettings } from "./lib/storage.js";
 import { validateRegion } from "./lib/geometry.js";
 
 let capturing = false;
 const extensionOrigin = chrome.runtime.getURL("");
-const editorJobs = new Map();
+let lastStatus = {
+  state: "idle",
+  message: "Select text. Then paste anywhere.",
+};
+
+async function updateStatus(state, message) {
+  lastStatus = { state, message };
+  await chrome.storage.session.set({ captureStatus: lastStatus });
+  await chrome.action.setBadgeText({
+    text: state === "reading" ? "…" : state === "done" ? "✓" : "!",
+  });
+  await chrome.action.setBadgeBackgroundColor({
+    color: state === "error" ? "#b42318" : "#0878f9",
+  });
+  await chrome.action.setTitle({ title: `TextTap — ${message}` });
+}
+
+async function ensureOffscreen() {
+  const contexts = await chrome.runtime.getContexts({
+    contextTypes: ["OFFSCREEN_DOCUMENT"],
+    documentUrls: [chrome.runtime.getURL("offscreen.html")],
+  });
+  if (!contexts.length)
+    await chrome.offscreen.createDocument({
+      url: "offscreen.html",
+      reasons: ["CLIPBOARD", "WORKERS", "BLOBS"],
+      justification:
+        "Recognize the user-selected screenshot locally and copy formatted text without opening a tab.",
+    });
+}
 
 export function isExtensionPage(sender) {
   return (
@@ -32,10 +61,9 @@ async function assertActive(tab) {
       "The active tab changed. Return to the source tab and capture again.",
     );
 }
-async function openEditor(tab, region) {
+async function captureAndCopy(tab, region) {
   if (capturing) throw new Error("A capture is already being prepared.");
   capturing = true;
-  let id;
   try {
     await assertActive(tab);
     const image = await chrome.tabs.captureVisibleTab(tab.windowId, {
@@ -46,18 +74,27 @@ async function openEditor(tab, region) {
       throw new Error(
         "This screenshot is too large. Use a smaller browser window or import a smaller image.",
       );
-    id = crypto.randomUUID();
-    await saveCapture({ id, image, region, createdAt: Date.now() });
-    const editor = await chrome.tabs.create({
-      url: chrome.runtime.getURL(`editor.html?capture=${id}`),
-      windowId: tab.windowId,
+    await updateStatus("reading", "Reading your selection on this device…");
+    await ensureOffscreen();
+    const result = await chrome.runtime.sendMessage({
+      target: "offscreen",
+      type: "RECOGNIZE_AND_COPY",
+      image,
+      region,
+      settings: await getSettings(),
     });
-    if (editor.id) editorJobs.set(editor.id, id);
-    return { ok: true };
+    if (!result?.ok)
+      throw new Error(result?.error || "Could not copy the recognized text.");
+    await updateStatus("done", "Copied. Press Ctrl+V (⌘V on Mac) to paste.");
+    return { ok: true, copied: true, words: result.words };
   } catch (error) {
-    if (id) await deleteCapture(id).catch(() => {});
+    await updateStatus("error", error.message || "Capture failed.").catch(
+      () => {},
+    );
     throw error;
   } finally {
+    // Release workers, image memory, and the hidden document after every job.
+    await chrome.offscreen.closeDocument().catch(() => {});
     capturing = false;
   }
 }
@@ -69,7 +106,7 @@ async function selectRegion(tab) {
     )
   ) {
     throw new Error(
-      "Chrome blocks selection on this page. Use Capture visible tab, then crop it in the editor.",
+      "Chrome blocks selection on this page. Use Capture visible tab to copy its text.",
     );
   }
   await assertActive(tab);
@@ -82,6 +119,15 @@ async function selectRegion(tab) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (
+    message?.type === "OCR_HEARTBEAT" &&
+    sender.id === chrome.runtime.id &&
+    sender.url === chrome.runtime.getURL("offscreen.html")
+  ) {
+    sendResponse({ ok: true });
+    return false;
+  }
+  if (
+    message?.target === "offscreen" ||
     sender.id !== chrome.runtime.id ||
     !message ||
     typeof message.type !== "string"
@@ -103,10 +149,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     "CAPTURE_VISIBLE",
     "OPEN_EDITOR",
     "CAPTURE_REGION",
+    "GET_STATUS",
   ];
   if (!supported.includes(message.type)) return false;
   (async () => {
-    if (regionMessage) return openEditor(sender.tab, message.region);
+    if (regionMessage) return captureAndCopy(sender.tab, message.region);
+    if (message.type === "GET_STATUS") {
+      const stored = await chrome.storage.session.get("captureStatus");
+      return { ok: true, ...(stored.captureStatus || lastStatus) };
+    }
     if (message.type === "OPEN_EDITOR") {
       await chrome.tabs.create({ url: chrome.runtime.getURL("editor.html") });
       return { ok: true };
@@ -114,7 +165,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const tab = await currentTab();
     return message.type === "SELECT_REGION"
       ? selectRegion(tab)
-      : openEditor(tab, null);
+      : captureAndCopy(tab, null);
   })().then(sendResponse, (error) =>
     sendResponse({
       ok: false,
@@ -129,18 +180,7 @@ chrome.commands.onCommand.addListener(async (command) => {
   try {
     await selectRegion(await currentTab());
   } catch (error) {
-    await chrome.tabs.create({
-      url: chrome.runtime.getURL(
-        `editor.html?error=${encodeURIComponent(error.message)}`,
-      ),
-    });
-  }
-});
-chrome.tabs.onRemoved.addListener((tabId) => {
-  const id = editorJobs.get(tabId);
-  if (id) {
-    editorJobs.delete(tabId);
-    void deleteCapture(id);
+    await updateStatus("error", error.message).catch(() => {});
   }
 });
 chrome.runtime.onStartup.addListener(() => {

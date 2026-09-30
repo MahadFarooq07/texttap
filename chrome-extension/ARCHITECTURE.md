@@ -10,13 +10,15 @@ The screenshot's actual width/height relative to viewport dimensions determines 
 
 ## Transfer and lifetime
 
-A screenshot and crop rectangle are placed into a single-use IndexedDB record under a random UUID. An editor tab receives only the ID in its URL. Its read/delete transaction consumes the record atomically, then removes the ID from the address bar. Captures older than 30 minutes are rejected and pruned during later startup/capture operations. This is logical expiration and opportunistic deletion, not a background timer guaranteeing physical deletion at exactly 30 minutes.
+The worker sends the screenshot, crop rectangle, and validated saved settings to a packaged offscreen document. They remain in memory and are not written to IndexedDB. Recognition and clipboard writing complete before the worker replies to the popup or selector. A single-job guard prevents overlapping captures from racing to overwrite the clipboard or close another job's document. Session storage contains only the last job's status, not recognized text or source URLs.
 
-Captures interrupted before consumption can remain on local disk until the next cleanup. There is no cloud persistence or capture history. Closing an editor clears its in-memory image and output. Reloading an editor does not recover already-consumed screenshots; recapture or reimport instead.
+The offscreen document is closed in a finally block after success or failure, releasing its image and OCR memory. Legacy IndexedDB transfers from older releases are still pruned on startup/install. Imported images remain in the optional editor's memory and disappear when it closes. There is no cloud persistence or capture history.
 
-## Why a full editor tab
+## Hidden recognition and direct copying
 
-The OCR worker belongs to a persistent extension page rather than the short-lived popup or suspendable MV3 service worker. Closing the toolbar popup does not kill recognition. Closing the editor terminates it. No offscreen-document API or heartbeat is needed. Screenshot capture finishes before the editor opens, so the new tab cannot contaminate the screenshot.
+The offscreen API provides DOM, canvas, workers, and clipboard access without opening or focusing a tab. The document sends a heartbeat every 20 seconds to keep the service worker alive during the 120-second recognition budget. It accepts jobs only from the extension's service worker. The document cannot be focused, so copying uses a synchronous copy event and the clipboardWrite permission instead of the focus-dependent Async Clipboard API. The copy handler writes text/plain and text/html, escapes OCR markup, and neutralizes formula-like table cells in both representations. Clipboard failures are returned explicitly. Empty/failed OCR never invokes copy.
+
+The selector is removed before capture and restores the previously focused input. It displays a temporary success/error toast after the job completes. A toolbar badge and popup status expose reading, success, and failure states. Only an explicit Image editor & formatting action opens an editor tab; that editor retains image import, manual review, and formatting preferences.
 
 ## Recognition pipeline
 
@@ -43,10 +45,10 @@ All rich HTML is generated from escaped text. OCR-provided HTML is never inserte
 
 ## Security boundaries
 
-- Permissions: activeTab, scripting, storage, clipboardWrite.
+- Permissions: activeTab, scripting, storage, clipboardWrite, offscreen.
 - No host_permissions, remotely hosted code, public web-accessible resources, analytics, fetch-to-image-URL feature, or external message listener.
 - Extension CSP denies external connections and permits WASM compilation without JavaScript unsafe-eval.
 - Only user-selected local images and visible screenshots are processed. Source page URLs/titles are not saved with captures.
-- `chrome://`, Chrome Web Store, and some PDF pages disallow injection. The UI directs the user to visible-tab capture and editor cropping instead. Capture availability remains subject to Chrome policies and protected-content restrictions.
+- `chrome://`, Chrome Web Store, and some PDF pages disallow injection. The UI directs the user to visible-tab capture instead. Capture availability remains subject to Chrome policies and protected-content restrictions.
 
 English is the only packaged language. Add another language only by validating legacy compatibility, recording its source/hash/license, bundling it, and exposing an explicit language choice. Many scripts have no legacy data; do not replace them with neural data while claiming non-neural operation.

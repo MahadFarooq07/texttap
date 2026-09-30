@@ -7,6 +7,21 @@
     return;
   }
   const previousFocus = document.activeElement;
+  const previousRanges = previousFocus?.isContentEditable
+    ? Array.from(
+        { length: document.getSelection()?.rangeCount || 0 },
+        (_, index) => document.getSelection().getRangeAt(index).cloneRange(),
+      )
+    : [];
+  const previousCaret =
+    previousFocus instanceof HTMLInputElement ||
+    previousFocus instanceof HTMLTextAreaElement
+      ? {
+          start: previousFocus.selectionStart,
+          end: previousFocus.selectionEnd,
+          direction: previousFocus.selectionDirection,
+        }
+      : null;
   const host = document.createElement("div");
   host.setAttribute("data-texttap-selection", "");
   host.style.cssText =
@@ -54,8 +69,22 @@
     window.removeEventListener("resize", cleanup);
     window.removeEventListener("scroll", cleanup);
     delete globalThis[key];
-    if (previousFocus instanceof HTMLElement)
+    if (previousFocus instanceof HTMLElement && previousFocus.isConnected) {
       previousFocus.focus({ preventScroll: true });
+      if (previousCaret?.start !== null && previousCaret?.start !== undefined) {
+        previousFocus.setSelectionRange(
+          previousCaret.start,
+          previousCaret.end,
+          previousCaret.direction,
+        );
+      } else if (previousRanges.length) {
+        const selection = document.getSelection();
+        selection?.removeAllRanges();
+        for (const range of previousRanges)
+          if (range.commonAncestorContainer.isConnected)
+            selection?.addRange(range);
+      }
+    }
   }
   globalThis[key] = cleanup;
   function prevent(event) {
@@ -129,12 +158,36 @@
         scrollY !== scrollTop
       )
         throw new Error("The page moved. Please capture again.");
-      const result = await chrome.runtime.sendMessage({
+      cleanup();
+      const toast = document.createElement("div");
+      const toastRoot = toast.attachShadow({ mode: "closed" });
+      toast.style.cssText =
+        "position:fixed!important;bottom:24px!important;left:50%!important;transform:translateX(-50%)!important;z-index:2147483647!important;pointer-events:none!important;";
+      const label = document.createElement("span");
+      label.style.cssText =
+        "display:block;background:#12233eee;color:white;padding:14px 22px;border:1px solid #ffffff40;border-radius:18px;box-shadow:0 10px 40px #12233e40;font:14px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;max-width:calc(100vw - 40px);";
+      label.setAttribute("role", "status");
+      label.textContent = "TextTap · Reading on your device…";
+      toastRoot.append(label);
+      document.documentElement.append(toast);
+      // Keep the toast hidden until capture and recognition finish.
+      toast.style.setProperty("visibility", "hidden", "important");
+      const pending = chrome.runtime.sendMessage({
         type: "CAPTURE_REGION",
         region: rect,
       });
-      if (!result?.ok) throw new Error(result?.error || "Capture failed.");
-      cleanup();
+      try {
+        const result = await pending;
+        label.textContent = result?.ok
+          ? "✓ Copied · Press Ctrl+V (⌘V on Mac) to paste"
+          : result?.error || "Capture failed. Please try again.";
+      } catch (error) {
+        label.textContent =
+          error.message || "Capture failed. Please try again.";
+      } finally {
+        toast.style.setProperty("visibility", "visible", "important");
+        setTimeout(() => toast.remove(), 6500);
+      }
     } catch (error) {
       host.style.setProperty("visibility", "visible", "important");
       box.style.display = "none";

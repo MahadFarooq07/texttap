@@ -14,7 +14,7 @@ test("MV3 permissions are narrowly scoped to explicit captures", () => {
   assert.ok(manifest.description.length <= 132);
   assert.deepEqual(
     manifest.permissions.sort(),
-    ["activeTab", "clipboardWrite", "scripting", "storage"].sort(),
+    ["activeTab", "clipboardWrite", "offscreen", "scripting", "storage"].sort(),
   );
   assert.equal(manifest.host_permissions, undefined);
   assert.equal(manifest.content_scripts, undefined);
@@ -35,6 +35,8 @@ test("every runtime entry and offline engine variant is packaged", async () => {
     "popup.html",
     "popup.js",
     "background.js",
+    "offscreen.html",
+    "offscreen.js",
     "selection.js",
     "style.css",
     "sample.png",

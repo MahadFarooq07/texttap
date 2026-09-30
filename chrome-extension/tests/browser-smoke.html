@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>TextTap capture pipeline check</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="popup">
+    <h1>Capture pipeline check</h1>
+    <p>Real packaged offline OCR → automatic plain and HTML clipboard copy.</p>
+    <button id="run" class="capture-button">Recognize and copy sample</button>
+    <p id="status" role="status">Ready</p>
+    <pre id="payload" aria-label="Clipboard event payload"></pre>
+    <label for="plain">Paste plain text</label><textarea id="plain"></textarea>
+    <p>Paste rich text below:</p>
+    <div
+      id="rich"
+      contenteditable="true"
+      role="textbox"
+      aria-label="Paste rich text"
+      tabindex="0"
+    ></div>
+    <script src="browser-smoke.js"></script>
+  </body>
+</html>

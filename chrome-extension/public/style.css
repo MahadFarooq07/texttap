@@ -123,7 +123,7 @@ p {
 }
 .popup {
   width: 360px;
-  background: #fff;
+  background: radial-gradient(ellipse at 0 0, #e2edff, transparent 70%), linear-gradient(135deg, #fbfdff, #f1f6fc);
   padding: 20px;
 }
 .popup-header {
@@ -161,8 +161,9 @@ p {
   background: #fff;
 }
 .capture-button {
-  background: #f0f6ff;
-  border-color: #dceafe;
+  background: linear-gradient(145deg, #ffffffd9, #e1edffb0);
+  border-color: #fff;
+  box-shadow: inset 0 1px 0 #fff, 0 5px 15px #285b9710;
 }
 .capture-button:hover {
   background: #e7f1ff;
@@ -209,7 +210,7 @@ p {
 }
 .popup-status {
   font-size: 12px;
-  color: #b05649;
+  color: #465d7c;
   line-height: 1.6;
   margin-top: 10px;
 }

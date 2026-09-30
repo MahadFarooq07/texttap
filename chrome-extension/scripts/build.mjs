@@ -48,8 +48,8 @@ await build({
 });
 await build({
   absWorkingDir: root,
-  entryPoints: ["src/editor.js"],
-  outfile: path.join(out, "editor.js"),
+  entryPoints: ["src/editor.js", "src/offscreen.js"],
+  outdir: out,
   bundle: true,
   format: "iife",
   platform: "browser",

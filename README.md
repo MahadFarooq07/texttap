@@ -1,6 +1,6 @@
 # TextTap
 
-TextTap is a light, Apple-inspired Next.js site and a free Chrome extension for capturing text from webpages and images. The extension runs classic Tesseract OCR locally; it does not use a hosted AI service, account, or application backend.
+TextTap is an Apple-inspired Next.js site with glass surfaces and a free Chrome extension for capturing text from webpages and images. Select an area and the extension recognizes and copies it automatically without opening a tab. Press Ctrl+V (⌘V on Mac) to paste. Paragraphs and lists are copied as both safe HTML and plain text. The extension runs classic Tesseract OCR locally; it does not use a hosted AI service, account, or application backend.
 
 ## Website
 
@@ -22,7 +22,7 @@ The build verifies the published extension ZIP and then creates a static export 
 
 ## Chrome extension
 
-The current distributable is committed to `public/downloads/texttap-1.0.0.zip`, so it is served by Vercel alongside the site at `/downloads/texttap-1.0.0.zip`. `latest.json` includes the version, size, and SHA-256 digest, which the site build checks.
+The current distributable is committed to `public/downloads/texttap-1.1.0.zip`, so it is served by Vercel alongside the site at `/downloads/texttap-1.1.0.zip`. `latest.json` includes the version, size, and SHA-256 digest, which the site build checks. The download page reads that metadata directly so its link and version stay synchronized. GitHub and installation links appear in the navigation, hero, and closing section.
 
 To rebuild the extension after changing its source, from the repository root run:
 

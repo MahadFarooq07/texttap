@@ -2,11 +2,14 @@
 
 ## Completed on this build
 
-- 24 automated tests passed, plus the real classic-OCR integration test (25 total).
-- Browser editor preview under the packaged CSP: recognized the bundled image, extracted the expected sentences, copied plain and rich text, generated a Markdown heading, retained edits on Keep edits, regenerated text on Replace, applied a 1,200 × 130 pixel crop, cancelled recognition, successfully restarted, and reset the crop.
-- No browser console errors were reported during the successful OCR run.
-- Packaged as `release/texttap-1.0.0.zip` with a top-level manifest and bundled offline assets.
-- **Not verified here:** installation into Chrome, actual Chrome screenshot capture, injected selection on third-party sites, and extension keyboard shortcuts. The available browser preview does not load unpacked extensions. Tests for capture routing use mocked Chrome APIs and do not substitute for these installation checks.
+- v1.1.0: 39 automated tests passed, plus one real classic-OCR integration test (40 total).
+- Capture routing verifies automatic copy without opening a tab, no screenshot persistence, source-tab race checks, overlapping-job rejection, hidden-document reuse and cleanup, saved formatting settings, sender validation, and heartbeat cleanup.
+- Clipboard tests verify plain text and HTML paragraphs/lists, formula-safe table output, cleanup on clipboard failure, and an untouched clipboard for blank images, decoding errors, and OCR errors.
+- Browser smoke test at `/capture-check.html` under the packaged CSP ran the actual offline OCR pipeline against the bundled sample. Recognition found 40 words and the real synchronous copy event contained the expected text/plain and text/html payloads, including paragraphs and numbered lists. No errors or warnings were logged for that smoke test.
+- Website browser checks covered desktop and mobile layout, mobile navigation, download/version/GitHub links, automatic sample copying, and the real website image-recognition dialog.
+- Website TypeScript and the production static-export build passed. HTTP checks verified both site routes, all 10 referenced page assets, and the v1.1.0 ZIP response against its size and SHA-256 metadata.
+- Packaged as `release/texttap-1.1.0.zip`, also published to the site's `public/downloads/`, with the top-level manifest and offline engine assets. SHA-256 and size verification passes.
+- **Not verified here:** installation into Chrome, actual screenshot capture and offscreen clipboard execution inside an installed extension, selection on third-party sites, and extension keyboard shortcuts. The available browser preview cannot load unpacked extensions. Its virtual clipboard is separate from the native copy event, so Ctrl+V into an external editor was not verified. Chrome API unit tests and the localhost smoke test do not substitute for these installation checks.
 
 ## Automated
 
@@ -23,13 +26,13 @@ These checks require a real Chrome installation with the unpacked extension load
 3. Repeat at 80%, 125%, and 200% browser zoom and on high-DPI displays.
 4. Press Escape and resize/scroll during selection; ensure the overlay is removed.
 5. Switch tabs during capture; ensure it fails instead of processing another tab.
-6. Capture the visible tab on a built-in PDF viewer and use editor crop when injection is blocked. Protected content may not be capturable.
+6. Capture the visible tab on a built-in PDF viewer. Verify text is copied automatically and no new tab opens. Protected content may not be capturable.
 7. Disconnect networking before the first OCR run. Import a PNG and verify recognition still succeeds.
 8. Cancel while the engine loads, then immediately run again. Ensure only the newest result updates the editor.
 9. Try blank images, dark-background images, rotated text, small text, multi-column pages, and a table with missing cells. Review low-confidence results.
 10. Edit text, switch formats, choose Keep edits, then choose Replace. Verify both paths.
 11. Copy plain/rich text to a document; export TXT/Markdown/TSV. Check TSV cells starting with formula operators are escaped.
-12. Close the popup while OCR runs in the editor; recognition continues. Close/reload the editor; no permanent result history should appear.
+12. Close the popup during a capture; hidden recognition continues, the source input regains focus, and Ctrl+V (⌘V on Mac) pastes the recognized text. Verify paragraphs/lists in a rich editor and plain text in a plain field. Confirm the hidden document closes after success, empty results, and failures. Ensure no permanent result history appears.
 13. Test shortcuts at chrome://extensions/shortcuts. Handle conflicts explicitly.
 
 Keep these installation checks distinct from unit tests and the browser OCR preview; do not claim they passed until run on the installed extension.

@@ -2,7 +2,18 @@ import http from "node:http";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { build } from "esbuild";
 const root = fileURLToPath(new URL("../dist/", import.meta.url));
+const smoke = await build({
+  entryPoints: [
+    fileURLToPath(new URL("../tests/browser-smoke.js", import.meta.url)),
+  ],
+  bundle: true,
+  write: false,
+  format: "iife",
+  platform: "browser",
+  target: "chrome116",
+});
 const manifest = JSON.parse(
   await fs.readFile(path.join(root, "manifest.json"), "utf8"),
 );
@@ -21,6 +32,26 @@ http
       const pathname = decodeURIComponent(
         new URL(req.url, "http://localhost").pathname,
       );
+      if (
+        pathname === "/capture-check.html" ||
+        pathname === "/browser-smoke.js"
+      ) {
+        const html = pathname === "/capture-check.html";
+        const data = html
+          ? await fs.readFile(
+              new URL("../tests/browser-smoke.html", import.meta.url),
+            )
+          : smoke.outputFiles[0].contents;
+        res.writeHead(200, {
+          "Content-Type": html
+            ? "text/html; charset=utf-8"
+            : "text/javascript; charset=utf-8",
+          "Content-Security-Policy":
+            manifest.content_security_policy.extension_pages,
+        });
+        res.end(data);
+        return;
+      }
       const target = path.resolve(
         root,
         "." + (pathname === "/" ? "/editor.html" : pathname),

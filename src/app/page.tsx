@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Check,
+  ArrowDownToLine,
   ChevronDown,
   ChevronRight,
   Clipboard,
@@ -25,6 +26,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { Worker } from "tesseract.js";
+import { Github } from "./github-icon";
 
 const samples = [
   {
@@ -62,7 +64,11 @@ const samples = [
 const faqs = [
   [
     "What is TextTap?",
-    "TextTap is a free Chrome extension that captures text from images and webpages. Select an area or image, review the OCR result, and copy cleanly formatted text. Recognition runs on your device.",
+    "TextTap is a free Chrome extension that reads text from images and webpages. Select an area and TextTap copies the result automatically. Press Ctrl+V (⌘V on Mac) wherever you want to paste. Recognition runs on your device.",
+  ],
+  [
+    "Does it keep the formatting?",
+    "TextTap copies both plain text and formatted HTML. Paragraphs and lists carry into editors that accept rich text, while plain text fields receive clean text. Choose lines, Markdown, or table output in the image editor; your saved choice also applies to captures. OCR reconstructs text structure rather than exact fonts or colors.",
   ],
   [
     "Can I try it without downloading anything?",
@@ -99,7 +105,20 @@ async function copyText(text: string) {
     throw new Error(
       "Clipboard access is unavailable. Please select and copy the text manually.",
     );
-  await navigator.clipboard.writeText(text);
+  if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+    const safe = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/plain": new Blob([text], { type: "text/plain" }),
+        "text/html": new Blob([`<p>${safe.replace(/\n/g, "<br>")}</p>`], {
+          type: "text/html",
+        }),
+      }),
+    ]);
+  } else await navigator.clipboard.writeText(text);
 }
 
 function ProductDemo({
@@ -110,6 +129,7 @@ function ProductDemo({
   playSignal: number;
 }) {
   const [active, setActive] = useState(0);
+  const activeSample = useRef(0);
   const [phase, setPhase] = useState<"ready" | "scanning" | "done">("ready");
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState("");
@@ -121,7 +141,13 @@ function ProductDemo({
     setPhase("scanning");
     setCopied(false);
     setCopyError("");
-    timer.current = setTimeout(() => setPhase("done"), 1500);
+    timer.current = setTimeout(() => {
+      setPhase("done");
+      void copyText(samples[activeSample.current].text).then(
+        () => setCopied(true),
+        () => setCopyError("Click Copy again to copy this sample."),
+      );
+    }, 1500);
   }, []);
 
   useEffect(() => {
@@ -135,6 +161,7 @@ function ProductDemo({
   );
 
   function selectSample(index: number) {
+    activeSample.current = index;
     if (timer.current) clearTimeout(timer.current);
     setActive(index);
     setPhase("ready");
@@ -231,10 +258,10 @@ function ProductDemo({
             <span className="result-icon">
               <ScanLine size={16} />
             </span>
-            <strong>Text, untapped.</strong>
+            <strong>Your next paste.</strong>
             <span className="result-status">
               <span />
-              {phase === "scanning" ? "Reading" : "Ready"}
+              {phase === "scanning" ? "Reading" : copied ? "Copied" : "Preview"}
             </span>
           </div>
           <div className="result-body" aria-live="polite">
@@ -253,7 +280,7 @@ function ProductDemo({
                 </p>
                 <span>
                   {phase === "done"
-                    ? "Captured. Ready for whatever’s next."
+                    ? "Paragraphs preserved. Ready to paste."
                     : "A little preview of your next copy & paste."}
                 </span>
               </>
@@ -274,11 +301,11 @@ function ProductDemo({
             {copied
               ? "Copied to clipboard"
               : phase === "done"
-                ? "Copy text"
+                ? "Copy again"
                 : phase === "scanning"
                   ? "Capturing…"
-                  : "Capture text"}
-            <span>{phase === "done" ? "⌘ C" : "↵"}</span>
+                  : "Select & copy"}
+            <span>{phase === "done" ? "Ctrl V" : "↵"}</span>
           </button>
           {copyError && (
             <span className="copy-error" role="alert">
@@ -290,9 +317,9 @@ function ProductDemo({
           <span className="shortcut-dot">
             <Check size={11} />
           </span>
-          <span>No more typing it all out.</span>
-          <kbd>⌘</kbd>
-          <kbd>C</kbd>
+          <span>Select. Copied. Yours.</span>
+          <kbd>Ctrl</kbd>
+          <kbd>V</kbd>
         </div>
         <span className="preview-label">INTERACTIVE PREVIEW</span>
       </div>
@@ -624,25 +651,24 @@ export default function Home() {
               How it works
             </a>
             <a href="#features" onClick={() => setMenuOpen(false)}>
-              The little things
+              Features
             </a>
             <a href="#faq" onClick={() => setMenuOpen(false)}>
               FAQs
             </a>
-            <a href="/download/" onClick={() => setMenuOpen(false)}>
-              Get the extension
-            </a>
-            <a href="/download/" onClick={() => setMenuOpen(false)}>
-              Get the extension
+            <a
+              href="https://github.com/MahadFarooq07/texttap"
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setMenuOpen(false)}
+            >
+              <Github size={15} /> GitHub
             </a>
           </div>
           <div className="nav-actions">
-            <button
-              className="button button-small button-dark"
-              onClick={openTry}
-            >
-              Try TextTap <span className="nav-plus">＋</span>
-            </button>
+            <a href="/download/" className="button button-small button-dark">
+              Install TextTap <ArrowDownToLine size={15} />
+            </a>
             <button
               className="menu-button"
               aria-label={menuOpen ? "Close navigation" : "Open navigation"}
@@ -657,9 +683,13 @@ export default function Home() {
       <main id="main">
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-content">
+            <div className="hero-emblem">
+              <Logo large />
+              <span className="emblem-glint" />
+            </div>
             <div className="intro-pill">
-              <span className="tiny-sparkle">✦</span>A little less retyping. A
-              lot more flow.
+              <span className="tiny-sparkle">✦</span> Your clipboard, a little
+              more capable.
               <ChevronRight size={13} />
             </div>
             <h1 id="hero-title">
@@ -667,22 +697,21 @@ export default function Home() {
               <br />
               you can{" "}
               <span className="headline-accent">
-                copy it.
+                paste it.
                 <svg viewBox="0 0 330 16" aria-hidden="true">
                   <path d="M4 12C79 1 237 1 326 9" />
                 </svg>
               </span>
             </h1>
             <p className="hero-description">
-              The words you need. Wherever they are.
+              Text from anything. Ready for anywhere.
               <br />
-              Lift text out of images, screenshots, and more. Just like magic.
+              Select it. It’s copied. Just press Ctrl+V.
             </p>
             <div className="hero-actions">
-              <button className="button button-primary" onClick={openTry}>
-                <ScanLine size={18} />
-                Try TextTap for free
-              </button>
+              <a className="button button-primary" href="/download/">
+                <ArrowDownToLine size={18} /> Install for Chrome
+              </a>
               <button className="button button-watch" onClick={watchDemo}>
                 <span className="play-icon">
                   <Play size={10} fill="currentColor" />
@@ -692,8 +721,17 @@ export default function Home() {
             </div>
             <p className="hero-note">
               <Monitor size={13} />
-              Chrome extension available<span>·</span>Runs on your device
+              Free & open source<span>·</span>Entirely on your device
             </p>
+            <a
+              className="hero-github"
+              href="https://github.com/MahadFarooq07/texttap"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Github size={16} /> Made to be yours. View the source{" "}
+              <ChevronRight size={14} />
+            </a>
           </div>
           <ProductDemo openTry={openTry} playSignal={playSignal} />
           <div className="benefit-strip">
@@ -789,8 +827,8 @@ export default function Home() {
                 <h3>Make it yours.</h3>
               </div>
               <p>
-                Copy your text, paste it where you need it, and get on with your
-                day.
+                Your text is copied automatically. Press Ctrl+V or ⌘V in your
+                notes, docs, or wherever you’re working.
               </p>
             </article>
           </div>
@@ -904,7 +942,7 @@ export default function Home() {
                     <Command size={31} />
                     <small>command</small>
                   </span>
-                  <span className="keycap key-c">C</span>
+                  <span className="keycap key-c">V</span>
                   <span className="key-sparkle">✦</span>
                 </div>
               </article>
@@ -1013,17 +1051,29 @@ export default function Home() {
         <section className="closing-section">
           <Logo large />
           <h2>
-            Less typing.
+            Your words.
             <br />
-            <span>More possibility.</span>
+            <span>Without the retyping.</span>
           </h2>
           <p>Your next great copy & paste starts here.</p>
-          <button className="button button-primary" onClick={openTry}>
-            <ScanLine size={18} />
-            Try TextTap for free
+          <div className="closing-actions">
+            <a className="button button-primary" href="/download/">
+              <ArrowDownToLine size={18} /> Install for Chrome
+            </a>
+            <a
+              className="button button-glass"
+              href="https://github.com/MahadFarooq07/texttap"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Github size={18} /> View on GitHub
+            </a>
+          </div>
+          <button className="text-button closing-demo" onClick={openTry}>
+            Try an image in your browser <ChevronRight size={15} />
           </button>
           <span className="closing-note">
-            No download. No account. Just a little magic.
+            Free to use. No account. Your text stays yours.
           </span>
         </section>
       </main>
@@ -1034,7 +1084,13 @@ export default function Home() {
         </a>
         <p>A little less friction. A little more you.</p>
         <span>© {new Date().getFullYear()} TextTap</span>
-        <a href="#faq">Questions?</a>
+        <a
+          href="https://github.com/MahadFarooq07/texttap"
+          target="_blank"
+          rel="noreferrer"
+        >
+          GitHub
+        </a>
         <a href="#features">Privacy, by design</a>
       </footer>
       <TryDialog dialogRef={dialogRef} />

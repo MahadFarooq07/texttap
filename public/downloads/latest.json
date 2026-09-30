@@ -1,8 +1,8 @@
 {
   "name": "TextTap for Chrome",
-  "version": "1.0.0",
-  "file": "texttap-1.0.0.zip",
-  "sha256": "2bd1604f03c889997dd375c8b9e18c2fd340afa8fcd3fe3316d78fbd38b87696",
-  "size": 20585902,
+  "version": "1.1.0",
+  "file": "texttap-1.1.0.zip",
+  "sha256": "4db03ffd9e1f721ccb1211ceaeaa9af19a8b0d80860e4711698f684ff6908bac",
+  "size": 20604633,
   "minimumChromeVersion": "116"
 }

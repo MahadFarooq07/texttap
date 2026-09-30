@@ -1,10 +1,16 @@
 {
   "manifest_version": 3,
   "name": "TextTap — Offline OCR",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "minimum_chrome_version": "116",
   "description": "Capture text from a screen region or image. Offline, non-neural OCR with editable paragraphs, Markdown, and tables. No account.",
-  "permissions": ["activeTab", "scripting", "storage", "clipboardWrite"],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "clipboardWrite",
+    "offscreen"
+  ],
   "background": { "service_worker": "background.js", "type": "module" },
   "action": {
     "default_popup": "popup.html",
